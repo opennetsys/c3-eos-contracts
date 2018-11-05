@@ -33,44 +33,12 @@ std::string hex_to_string(const std::string& input) {
   return output;
 }
 
-class checkpoint: public eosio::contract {
+class merkle: public eosio::contract {
   public:
       using contract::contract;
 
-      struct checkpoint {
-        uint64_t id; // primary key
-        std::string root; // merkle root
-
-        uint64_t primary_key() const { return id; }
-        uint64_t by_checkpointId() const { return id; }
-
-        EOSLIB_SERIALIZE(checkpoint, (id)(root));
-      };
-
-      typedef multi_index<N(checkpoints), checkpoint> checkpoints_table;
-
       ///@abi action
-      void chkpointroot(std::string root) {
-        //require_auth(_self);
-        checkpoints_table _checkpoints(_self, _self);
-        _checkpoints.emplace(get_self(), [&](auto &r) {
-          r.id = _checkpoints.available_primary_key();
-          r.root = root;
-        });
-      }
-
-      ///@abi action
-      void getchkpoints() {
-        checkpoints_table _checkpoints(_self, _self);
-
-        for (auto iter = _checkpoints.begin(); iter != _checkpoints.end(); iter++) {
-          print("id: ", (*iter).id);
-          print("root: ", (*iter).root);
-        }
-      }
-
-      ///@abi action
-      void ecverify(const vector<std::string>& proof, const vector<std::uint8_t>& positions, std::string root, std::string leaf) {
+      void verify(const vector<std::string>& proof, const vector<std::uint8_t>& positions, std::string root, std::string leaf) {
         std::string computed_hash = leaf;
         uint8_t hashlen = 32;
 
@@ -106,4 +74,4 @@ class checkpoint: public eosio::contract {
   }
 };
 
-EOSIO_ABI( checkpoint, (ecverify)(getchkpoints)(chkpointroot) )
+EOSIO_ABI( merkle, (verify) )
