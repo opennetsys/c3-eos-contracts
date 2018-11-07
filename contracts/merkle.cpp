@@ -33,14 +33,14 @@ std::string hex_to_string(const std::string& input) {
   return output;
 }
 
-class merklecheckpoint: public eosio::contract {
+class blockcheckpoint: public eosio::contract {
   public:
       using contract::contract;
 
       /// @abi table checkpoint i64
       struct checkpoint {
         uint64_t id; // primary key
-        std::string root; // merkle root
+        std::string root; // block hash
 
         uint64_t primary_key() const { return id; }
         uint64_t by_checkpoint_id() const { return id; }
@@ -84,7 +84,7 @@ class merklecheckpoint: public eosio::contract {
       }
 
       ///@abi action
-      void ecverify(const vector<std::string>& proof, const vector<std::uint8_t>& positions, std::string root, std::string leaf) {
+      void verifyproof(const vector<std::string>& proof, const vector<std::uint8_t>& positions, std::string root, std::string leaf) {
         std::string computed_hash = leaf;
         uint8_t hashlen = 32;
 
@@ -120,4 +120,4 @@ class merklecheckpoint: public eosio::contract {
   }
 };
 
-EOSIO_ABI( merklecheckpoint, (ecverify)(getchkpoints)(chkpointroot) )
+EOSIO_ABI( blockcheckpoint, (verifyproof)(getchkpoints)(chkpointroot) )
