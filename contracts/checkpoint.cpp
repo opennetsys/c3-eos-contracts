@@ -33,12 +33,58 @@ std::string hex_to_string(const std::string& input) {
   return output;
 }
 
-class merkle: public eosio::contract {
+class blockcheckpoint: public eosio::contract {
   public:
       using contract::contract;
 
+      /// @abi table checkpoint i64
+      struct checkpoint {
+        uint64_t id; // primary key
+        std::string root; // block hash
+
+        uint64_t primary_key() const { return id; }
+        uint64_t by_checkpoint_id() const { return id; }
+
+        EOSLIB_SERIALIZE(checkpoint, (id)(root));
+      };
+
+      typedef multi_index<N(checkpoint), checkpoint, indexed_by<N(byroot), const_mem_fun<checkpoint, uint64_t, &checkpoint::by_checkpoint_id>>> checkpoints_table;
+
       ///@abi action
-      void verify(const vector<std::string>& proof, const vector<std::uint8_t>& positions, std::string root, std::string leaf) {
+      void chkpointroot(std::string root) {
+        require_auth(_self);
+
+        checkpoints_table _checkpoints(_self, _self);
+
+        bool exists = false;
+        for (auto iter = _checkpoints.begin(); iter != _checkpoints.end(); iter++) {
+          if ((*iter).root == root) {
+            exists = true;
+          }
+        }
+
+        if (!exists) {
+          _checkpoints.emplace(_self, [&](auto &row) {
+              row.id = _checkpoints.available_primary_key();
+              row.root = root;
+              });
+        } else {
+          abort();
+        }
+      }
+
+      ///@abi action
+      void getchkpoints() {
+        checkpoints_table _checkpoints(_self, _self);
+
+        for (auto iter = _checkpoints.begin(); iter != _checkpoints.end(); iter++) {
+          print("id: ", (*iter).id);
+          print("root: ", (*iter).root);
+        }
+      }
+
+      ///@abi action
+      void verifyproof(const vector<std::string>& proof, const vector<std::uint8_t>& positions, std::string root, std::string leaf) {
         std::string computed_hash = leaf;
         uint8_t hashlen = 32;
 
@@ -74,4 +120,4 @@ class merkle: public eosio::contract {
   }
 };
 
-EOSIO_ABI( merkle, (verify) )
+EOSIO_ABI( blockcheckpoint, (verifyproof)(getchkpoints)(chkpointroot) )
